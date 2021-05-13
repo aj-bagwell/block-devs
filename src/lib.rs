@@ -13,12 +13,13 @@ mod freebsd;
 #[cfg(target_os = "freebsd")]
 pub use self::freebsd::*;
 
-use std::io::{Result, Seek, SeekFrom, Write};
+use std::cmp::min;
+use std::io::{Read, Result, Seek, SeekFrom, Write};
 
 /// Block device specific extensions to [`File`].
 ///
 /// [`File`]: ../../std/fs/struct.File.html
-pub trait BlckExt: Seek + Write {
+pub trait BlckExt: Seek + Read + Write {
     /// Test if the file is a block device
     ///
     /// This will return `true` for a block device e.g. `"/dev/sda1"` and `false` for other files
@@ -52,6 +53,9 @@ pub trait BlckExt: Seek + Write {
     ///
     /// Since this is a linux only feature other systems will always return false
     ///
+    /// Your best bet for knowing if block discarding zeros is to discard some blocks and test that it worked using [`block_fast_zero_out`].
+    ///
+    /// [`block_fast_zero_out`]: #tymethod.block_fast_zero_out
     /// [`block_discard`]: #tymethod.block_discard
     fn block_discard_zeros(&self) -> Result<bool>;
 
@@ -87,6 +91,39 @@ pub trait BlckExt: Seek + Write {
         self.seek(SeekFrom::Start(oldpos))?;
         Ok(())
     }
+
+    /// Try to zero out a block using discard and return an error if the data is not zeroed.
+    ///
+    /// Some devices will (SSDs, thinly provisioned RAID arrays) will return zeros if a sufficiently
+    /// large area is discarded. This method writes some data to the start of the range to be zerod, disards the range
+    /// then reads the data back. It returns an error if the data was not zerod.
+    ///
+    /// `offset` and `length` should be given in bytes.
+    fn block_fast_zero_out(&mut self, offset: u64, len: u64) -> Result<()> {
+        const BUF_SIZE: usize = 1024;
+        let test_len = min(BUF_SIZE as u64, len) as usize;
+        let ones = [255; BUF_SIZE];
+        self.seek(SeekFrom::Start(offset))?;
+        self.write_all(&ones[0..test_len])?;
+        self.seek(SeekFrom::Start(offset))?;
+        self.sync_data()?;
+        self.block_discard(offset, len)?;
+        self.sync_data()?;
+
+        let mut buffer = [255; BUF_SIZE];
+        let read = self.read(&mut buffer)?;
+        self.seek(SeekFrom::Start(offset))?;
+        if read < test_len {
+            return Err(io_error("Fast Zero Block failed"));
+        }
+        if buffer[0..test_len].iter().any(|x| *x != 0) {
+            return Err(io_error("Fast Zero Block failed"));
+        }
+
+        Ok(())
+    }
+
+    fn sync_data(&self) -> Result<()>;
 }
 
 fn io_error(str: &str) -> std::io::Error {

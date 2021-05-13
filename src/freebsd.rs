@@ -45,8 +45,8 @@ impl BlckExt for File {
         Err(crate::Error::UnsupportedOperation)
     }
 
-    fn block_zero_out(&mut self, offset: u64, len: u64) -> Result<()> {
-        slow_zero(self, offset, len)
+    fn sync_data(&self) -> Result<()> {
+        File::sync_data(self)
     }
 }
 

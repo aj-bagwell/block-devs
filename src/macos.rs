@@ -51,6 +51,10 @@ impl BlckExt for File {
         }
         Ok(())
     }
+
+    fn sync_data(&self) -> Result<()> {
+        File::sync_data(self)
+    }
 }
 
 #[allow(clippy::missing_safety_doc)]
