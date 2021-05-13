@@ -1,3 +1,29 @@
+//! Block Devs provides safe wrappers for the ioctl calls for
+//! dealing with block devices (USB sticks, SSDs, hard drives etc).
+//!
+//! It aims to provide a consitent interface across all platforms for things like
+//! getting the number of bytes a disk has.
+//!
+//! So far Linux, macOS and Open BSD are supported
+//!
+//! It does this by a extention trait ([`BlckExt`]) on the standard [`File`] struct.
+//!
+//! ```rust,no_run
+//!     use block_devs::BlckExt;
+//!     use std::fs::File;
+//!
+//!     let path = "/dev/sda2";
+//!     let file = File::open(path).unwrap();
+//!     let count = file.get_block_count().unwrap();
+//!     let bytes = file.get_block_device_size().unwrap();
+//!     let gb = bytes >> 30;
+//!
+//!     println!("disk is {} blocks totaling {}gb", count, gb);
+//! ```
+//!
+//! [`File`]: std::fs::File
+//! [`BlckExt`]: BlckExt
+
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
@@ -18,7 +44,7 @@ use std::io::{Read, Result, Seek, SeekFrom, Write};
 
 /// Block device specific extensions to [`File`].
 ///
-/// [`File`]: ../../std/fs/struct.File.html
+/// [`File`]: std::fs::File
 pub trait BlckExt: Seek + Read + Write {
     /// Test if the file is a block device
     ///
@@ -29,7 +55,7 @@ pub trait BlckExt: Seek + Read + Write {
     /// Get the total size of the block device in bytes.
     fn get_block_device_size(&self) -> Result<u64>;
 
-    /// Get the size of one logical blocks in bytes.
+    /// Get the size of one logical block in bytes.
     fn get_size_of_block(&self) -> Result<u64>;
 
     /// Get the number of blocks on the device.
@@ -62,7 +88,7 @@ pub trait BlckExt: Seek + Read + Write {
     /// Discard a section of the block device.
     ///
     /// Some device e.g. thinly provisioned arrays or SSDs with TRIM support have the ability to mark blocks as unused
-    /// to free them up for other use. This may or maynot result in future reads to the discarded section to return
+    /// to free them up for other use. This may or may not result in future reads to the discarded section to return
     /// zeros, see [`block_discard_zeros`] for more detail.
     ///
     /// `offset` and `length` should be given in bytes.
@@ -72,12 +98,14 @@ pub trait BlckExt: Seek + Read + Write {
 
     /// Zeros out a section of the block device.
     ///
-    /// There is no guaranty that there special kernel support for this and it is unlikely to be
-    /// much faster that writing zeros the normal way.
+    /// There is no guaranty that there special kernel support for this even [`block_discard_zeros`] returns `true`
+    /// so it is unlikely to be much faster that writing zeros the normal way, apart from saving a bunch of syscalls.
     ///
     /// If there is no system call on a platfrom it will be implement by writing zeros in the normal way
     ///
     /// `offset` and `length` should be given in bytes.
+    ///
+    /// [`block_discard_zeros`]: #tymethod.block_discard_zeros
     fn block_zero_out(&mut self, offset: u64, len: u64) -> Result<()> {
         const BUF_SIZE: usize = 1024;
         let zeros = [0; BUF_SIZE];
