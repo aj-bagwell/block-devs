@@ -1,6 +1,6 @@
 # Safe portable wrapper for block device opperations
 
-[![crates.io](http://meritbadge.herokuapp.com/block-devs](https://crates.io/crates/block-devs)
+[![crates.io](http://meritbadge.herokuapp.com/block-devs)](https://crates.io/crates/block-devs)
 
 [Documentation (Releases)](https://docs.rs/block-devs/)
 
@@ -13,15 +13,16 @@ getting the number of bytes a disk has.
 It does this by a extention trait on the standard `File` struct.
 
 ```rust,ignore
-    use block-devs::BlockExt;
+    use block_devs::BlockExt;
     use std::fs::File;
     
     let path = "/dev/sda2";
     let file = File::open(path)?;
+    let count = file.get_block_count().unwrap();
     let bytes = file.get_block_device_size()?;
     let gb = bytes >> 30;
 
-    println!("disk is {} blocks {}gb", bytes, gb);
+    println!("disk is {} blocks totaling {}gb", count, gb);
 ```
 
 ## Supported Platforms
