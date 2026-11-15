@@ -1,4 +1,4 @@
-use crate::{to_io, BlckExt};
+use crate::BlckExt;
 use std::fs::File;
 use std::io::Result;
 use std::os::unix::fs::FileTypeExt;
@@ -16,7 +16,7 @@ impl BlckExt for File {
         let fd = self.as_raw_fd();
         let mut blksize = 0;
         unsafe {
-            ioctls::blkgetsize64(fd, &mut blksize).map_err(to_io)?;
+            ioctls::blkgetsize64(fd, &mut blksize)?;
             Ok(blksize)
         }
     }
@@ -25,7 +25,7 @@ impl BlckExt for File {
         let fd = self.as_raw_fd();
         let mut blksize = 0;
         unsafe {
-            ioctls::blksszget(fd, &mut blksize).map_err(to_io)?;
+            ioctls::blksszget(fd, &mut blksize)?;
         }
         Ok(blksize as u64)
     }
@@ -37,7 +37,7 @@ impl BlckExt for File {
     fn block_reread_paritions(&self) -> Result<()> {
         let fd = self.as_raw_fd();
         unsafe {
-            ioctls::blkrrpart(fd).map_err(to_io)?;
+            ioctls::blkrrpart(fd)?;
         }
         Ok(())
     }
@@ -46,7 +46,7 @@ impl BlckExt for File {
         let fd = self.as_raw_fd();
         let mut discard_zeros = 0;
         unsafe {
-            ioctls::blkdiscardzeros(fd, &mut discard_zeros).map_err(to_io)?;
+            ioctls::blkdiscardzeros(fd, &mut discard_zeros)?;
         }
         Ok(discard_zeros != 0)
     }
@@ -55,7 +55,7 @@ impl BlckExt for File {
         let fd = self.as_raw_fd();
         let range = [offset, len];
         unsafe {
-            ioctls::blkdiscard(fd, &range).map_err(to_io)?;
+            ioctls::blkdiscard(fd, &range)?;
         }
         Ok(())
     }
@@ -64,7 +64,7 @@ impl BlckExt for File {
         let fd = self.as_raw_fd();
         let range = [offset, len];
         unsafe {
-            ioctls::blkzeroout(fd, &range).map_err(to_io)?;
+            ioctls::blkzeroout(fd, &range)?;
         }
         Ok(())
     }

@@ -157,12 +157,3 @@ pub trait BlckExt: Seek + Read + Write {
 fn io_error(str: &str) -> std::io::Error {
     std::io::Error::new(std::io::ErrorKind::Other, str)
 }
-
-fn to_io(err: nix::Error) -> std::io::Error {
-    match err {
-        nix::Error::Sys(errno) => errno.into(),
-        nix::Error::InvalidPath => io_error("InvalidPath"),
-        nix::Error::InvalidUtf8 => io_error("InvalidUtf8"),
-        nix::Error::UnsupportedOperation => io_error("UnsupportedOperation"),
-    }
-}

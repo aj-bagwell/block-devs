@@ -16,4 +16,4 @@ targets = [
 ]
 
 [dependencies]
-nix = "0.19"
+nix = { version = "0.31", features = ["uio", "ioctl"] }

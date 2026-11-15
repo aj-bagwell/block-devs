@@ -1,4 +1,4 @@
-use crate::{io_error, to_io, BlckExt};
+use crate::{io_error, BlckExt};
 use std::fs::File;
 use std::io::Result;
 use std::os::unix::fs::FileTypeExt;
@@ -20,7 +20,7 @@ impl BlckExt for File {
         unsafe {
             let fd = self.as_raw_fd();
             let mut blksize: u32 = 0;
-            ioctls::dkiocgetblocksize(fd, &mut blksize).map_err(to_io)?;
+            ioctls::dkiocgetblocksize(fd, &mut blksize)?;
             Ok(blksize as u64)
         }
     }
@@ -29,7 +29,7 @@ impl BlckExt for File {
         unsafe {
             let fd = self.as_raw_fd();
             let mut blkcount: u64 = 0;
-            ioctls::dkiocgetblockcount(fd, &mut blkcount).map_err(to_io)?;
+            ioctls::dkiocgetblockcount(fd, &mut blkcount)?;
             Ok(blkcount)
         }
     }
@@ -47,7 +47,7 @@ impl BlckExt for File {
         let range = [ioctls::dk_extent { offset, length }];
         let unmap = ioctls::dk_unmap::new(&range, 0);
         unsafe {
-            ioctls::dkiocunmap(fd, &unmap).map_err(to_io)?;
+            ioctls::dkiocunmap(fd, &unmap)?;
         }
         Ok(())
     }

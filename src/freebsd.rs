@@ -1,4 +1,4 @@
-use crate::{io_error, to_io, BlckExt};
+use crate::{io_error, BlckExt};
 use std::fs::File;
 use std::io::Result;
 use std::os::unix::fs::FileTypeExt;
